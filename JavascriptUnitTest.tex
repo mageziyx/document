@@ -1,0 +1,357 @@
+\documentclass[a4paper,11pt]{article}
+\usepackage{hyperref}
+\usepackage{color}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{caption}
+\DeclareCaptionFont{white}{\color{white}}
+\DeclareCaptionFormat{listing}{\colorbox{gray}{\parbox{\textwidth}{#1#2#3}}}
+\usepackage[margin=0.6in]{geometry}
+\definecolor{light-gray}{gray}{0.80}
+\lstdefinestyle{customhtml}{
+  belowcaptionskip=1\baselineskip,
+  frame=L,
+  xleftmargin=\parindent,
+  language=HTML,
+  basicstyle=\footnotesize\ttfamily,
+  commentstyle=\itshape\color{purple!40!black},
+}
+\lstdefinestyle{customjava}{
+  belowcaptionskip=1\baselineskip,
+  frame=L,
+  xleftmargin=\parindent,
+  language=HTML,
+  basicstyle=\footnotesize\ttfamily,
+  commentstyle=\itshape\color{purple!40!black},
+  keywordstyle=\color{blue},
+  morekeywords = {*,Player,require,var,function,describe,it},
+  numbers=left
+}
+\captionsetup[lstlisting]{format=listing,labelfont=white,textfont=white}
+% define the title
+\title{Javascript Unit Test}
+\begin{document}
+% generates the title
+\maketitle
+% insert the table of contents
+\tableofcontents
+\pagebreak
+\section{Unit Test Frameworks}
+There are plenty of javascript unit test frameworks. Selecting one to use for your project is quite daunting. The purpose of this document is to help you to have a quick pick and a quick start on which javascript unit test framework to use so that writing unit test with mocking and automating your unit test become easy task. Two of the frameworks we used in AutoCAD team is Jasmine and QUnit. \textbf{Geolocation} map html dialog uses Jasmine and \textbf{New Tab Page} uses QUnit. Following sections will show you how to setup and start your unit test project quickly.
+	\subsection{ Jasmine Unit Test Framwork }
+	\subsubsection{ Getting Jasmine }	
+	You can get the latest jasmine from \url{https://github.com/pivotal/jasmine/downloads}.
+	\subsubsection{ Setting up unit test project }
+	Here is my own preference for creating test folder structure.
+           \begin{lstlisting}[label=some-code,caption=Folder Structure Suggestion, escapechar=!]
+	/..
+	/src 
+	!\textcolor{blue}{/lib}!
+	   !\textcolor{blue}{/jasmine-1.3.1}!
+	      !\textcolor{blue}{jasmine.css}!	
+	      !\textcolor{blue}{jasmine.js}!	
+	      !\textcolor{blue}{jasmine-html.js}!	
+	!\textcolor{blue}{/spec}!
+	      !\textcolor{blue}{playerSpec.js}!	
+	index.html
+	!\textcolor{blue}{specRunner.html}!
+           \end{lstlisting}
+	Assume \textbf{/src} is your javascript implementation folder and index.html is the your html page. We need to add on folder \textbf{/lib} to contain jasmine library which you have downloaded, \textbf{/spec} to contain test code e.g \textbf{playerSpec.js}, and \textbf{specRunner.html} is entry of your test code.\\\\
+	\pagebreak
+	Following is a boilerplate of SpecRunner.html which you can start with
+           \begin{lstlisting}[label=some-code,caption=SpecRunner.html boilerplate, language=HTML, keywordstyle=\color{blue}, style = customhtml, numbers=left]
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+  "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<title>Jasmine Spec Runner</title>
+<link rel="shortcut icon" type="image/png" href="lib/jasmine-1.3.1/jasmine_favicon.png">
+<link rel="stylesheet" type="text/css" href="lib/jasmine-1.3.1/jasmine.css">
+<script type="text/javascript" src="lib/jasmine-1.3.1/jasmine.js"></script>
+<script type="text/javascript" src="lib/jasmine-1.3.1/jasmine-html.js"></script>
+<!-- include source files here... -->
+<script type="text/javascript" src="src/Player.js"></script>
+<script type="text/javascript" src="src/Song.js"></script>
+<!-- include spec files here... -->
+<script type="text/javascript" src="spec/PlayerSpec.js"></script>
+<script type="text/javascript">
+(function() {
+      var jasmineEnv = jasmine.getEnv();
+      jasmineEnv.updateInterval = 1000;
+      var htmlReporter = new jasmine.HtmlReporter();
+      jasmineEnv.addReporter(htmlReporter);
+      jasmineEnv.specFilter = function(spec) {
+        return htmlReporter.specFilter(spec);
+      };
+      var currentWindowOnload = window.onload;
+      window.onload = function() {
+        if (currentWindowOnload) {
+          currentWindowOnload();
+        }
+        execJasmine();
+      };
+      function execJasmine() {
+        jasmineEnv.execute();
+      }
+    })();
+</script>
+</head>
+<body>
+</body>
+</html>
+           \end{lstlisting}
+Line 11, 12 and 14 in Listing 2  shall be modified to include your javascript files and their specs. The sample code for \textbf{Player.js} and \textbf{Song.js} can be found in the appendix\\\\
+We can start to add test for \textbf{PlayerSpec.js} as follow\\
+\begin{lstlisting}[label=some-code-test,caption=Player.js,style = customjava, numbers=left]
+describe("Player", function() {
+  var player;
+  var song;
+
+  beforeEach(function() {
+    player = new Player();
+    song = new Song();
+  });
+
+  it("should be able to play a Song", function() {
+    player.play(song);
+    expect(player.currentlyPlayingSong).toEqual(song);
+
+    //demonstrates use of custom matcher
+    expect(player).toBePlaying(song);
+  });
+
+  describe("when song has been paused", function() {
+    beforeEach(function() {
+      player.play(song);
+      player.pause();
+    });
+
+    it("should indicate that the song is currently paused", function() {
+      expect(player.isPlaying).toBeFalsy();
+
+      // demonstrates use of 'not' with a custom matcher
+      expect(player).not.toBePlaying(song);
+    });
+
+    it("should be possible to resume", function() {
+      player.resume();
+      expect(player.isPlaying).toBeTruthy();
+      expect(player.currentlyPlayingSong).toEqual(song);
+    });
+  });
+
+  // demonstrates use of spies to intercept and test method calls
+  it("tells the current song if the user has made it a favorite", function() {
+    spyOn(song, 'persistFavoriteStatus');
+
+    player.play(song);
+    player.makeFavorite();
+
+    expect(song.persistFavoriteStatus).toHaveBeenCalledWith(true);
+  });
+
+  //demonstrates use of expected exceptions
+  describe("#resume", function() {
+    it("should throw an exception if song is already playing", function() {
+      player.play(song);
+
+      expect(function() {
+        player.resume();
+      }).toThrow("song is already playing");
+    });
+  });
+});
+\end{lstlisting}
+\textbf{describe('...', function(){...})} is use to declare a test suite and \textbf{it("...", function(){...} )} to declare a test case. Openning \textbf{SpecRunner.html} in a browser will exectue the test cases. To run the test cases in a console which is useful for continuous integration please refer to section \textbf{Automate Javascript Unit Testing}.\\\\
+Jasmine provide very nice mock/spy mechanism and asynchronous support which are extremely helpful when writing your test. \textit{For more information please check the detail on \url{http://pivotal.github.com/jasmine}}
+	\subsection{ Jasmine vs QUnit}
+	Jasmine is more preferable over QUnit for the following reasons:
+	\begin{itemize}
+	\item Spy/mock is not available in QUnit, in order to use spy/mock  we need to use another framework(sinon-QUnit)
+	\item Scoping differences of tests/specs within suites. Jasmine scoping in the suite is more handy for managing the code you need to run.
+	\item Level of information displayed of assertion failure in jasmine is more informative automatically(BDD) than that of QUnit. For example :
+			\begin{lstlisting}[label=some-code-test,caption=Sample Jasmine Test Case,style = customjava, numbers=left]
+var callbackFinish = jasmine.createSpy("callback spy");
+...
+expect(callbackFinish).not.toHaveBeenCalled();
+			\end{lstlisting}			
+			The error displayed as 'Error: Expected spy callback spy not to have been called.'
+			\begin{lstlisting}[label=some-code-test,caption=Sample Qunit Test Case,style = customjava, numbers=left]
+var callbackFinish = sinon.spy();
+...
+ok(!callbackFinish.called, "callback spy");
+			\end{lstlisting}			
+			The error displayed is as 'callback spy'		
+	\item Creating spy/stub objects from scratch are easier to code in \textbf{jasmine} than \textbf{QUnit}
+			\begin{lstlisting}[label=some-code-test,caption=Sample Jasmine Test Case For Creating Spy/Mock,style = customjava, numbers=left]
+mockMap = jasmine.createSpyObj('mockMap',
+	['createLocation',
+	'addPin',
+	'removeEntity',
+	'removeHandler', 'addHandler',
+	'createPoint',
+	'createInfoBox', 'addInfoBox', 'removeInfoBox',
+	'markPinStyle',
+	'getPinLocation',
+	'getHeightPin',
+	'panMapTo']);
+			\end{lstlisting}
+			\begin{lstlisting}[label=some-code-test,caption=Sample QUnit Test Case For Creating Spy/Mock,style = customjava, numbers=left]
+mockMap = sinon.stub({
+	createLocation : function(){},
+	addPin : function(){},
+	removeEntity : function(){},
+	removeHandler : function(){},
+	addHandler : function(){},
+	createPoint : function(){},
+	createInfoBox : function(){},
+	addInfoBox : function(){}, 
+	removeInfoBox : function(){},
+	markPinStyle : function(){},
+	getPinLocation : function(){},
+	getHeightPin : function(){},
+	panMapTo : function(){}
+});
+			\end{lstlisting}
+	\item Sometimes need to wrap function twice in QUnit. It's not allowed in some cases, we need to restore the mock first and then overwrite old stub.
+			\begin{lstlisting}[label=some-code-test,caption=Sample QUnit Test Case For Overwrite Old Stub,style = customjava, numbers=left]
+mockMap.addHandler.restore();
+sinon.stub(mockMap, 'addHandler', function () {
+	mockMap.cntAddHandlerCall++;
+});
+			\end{lstlisting}
+	\textbf{Jasmine} does not have this issue since it provides functions on the spy object to set which replacement function to call. It means the stub is more reusable
+\begin{lstlisting}[label=some-code-test,caption=Sample Jasmine Test Case For Overwrite Old Spy/Mock,style = customjava, numbers=left]
+mockMap.addHandler.andCallFake(function () {
+	mockMap.cntAddHandlerCall++;
+});
+\end{lstlisting}
+	\item QUnit does not have custom matchers support. Jasmine support custom matcher with pretty english deprived from matcher's name for error output.
+\begin{lstlisting}[label=some-code-test,caption=Jasmine's custom matcher,style = customjava, numbers=left]
+this.addMatchers({
+	toBeWatermarked: function () {
+		return this.actual.css("opacity") == 0.5;
+	},
+	toBeNotWatermarked: function () {
+		return this.actual.css("display") == "none" || this.actual.css('opacity') == 0.0;
+	}
+});
+\end{lstlisting}	
+	If there is an error with this matcher, it is displayed as 'Expected ... to be not watermarked'
+	\item The structure of test narrative is readable and similar to Agile's user stories format.
+	\end{itemize}
+\section{ Code Coverage For Javascript Unit Test }
+I suggest to use \textbf{JsCoverage} for code coverage. Detailed instruction can be found  \url{http://siliconforks.com/jscoverage/manual.html}
+\section{Automate Javascript Unit Testing}
+There are many tools out there to help integrating javascript unit test with CI process. I choose to use \textbf{Headless Webkit PhantomJS} approach because it is easy to set up and it works nicely with Jasmine, QUnit, Mocha, etc. frameworks and the core module of PhantomJS and Chromium are Webkit so we do not worry much about the different of testing environment\\
+Here is how I set it up with Jasmine unit test sample I provided previously on Window 
+\begin{enumerate}
+\item Download PhantomJs \url{http://phantomjs.org/download.html} for window
+\item Extract the zip file, and then copy \textbf{phantomjs.exe} and \textbf{examples\\runjasmine.js} to same folder as \textbf{SpecRunner.html}
+\item Run \textbf{phantomjs.exe run-Jasmine.js SpecRunner.html}, basically phantom
+\end{enumerate}
+The flow of run-Jasmine.js basically is requesting the webpage SpecRunner.html and once the html result is obtained, parse the result and put it in the console. So feel free to modify run-Jasmine.js to suit your need.
+\begin{lstlisting}[label=some-code,caption=Player.js,keywordstyle=\color{blue},style = customjava, numbers=left]
+var system = require('system');
+function waitFor(testFx, onReady, timeOutMillis) {
+ var maxtimeOutMillis = timeOutMillis ? timeOutMillis : 3001, //< Default Max Timeout is 3s
+ start = new Date().getTime(),
+ condition = false,
+ interval = setInterval(function() {
+     if ( (new Date().getTime() - start < maxtimeOutMillis) && !condition ) {
+        // If not time-out yet and condition not yet fulfilled
+        condition = (typeof(testFx) === "string" ? eval(testFx) : testFx()); //defensive code
+     } else {
+        if(!condition) {
+          // If condition still not fulfilled (timeout but condition is 'false')
+         console.log("'waitFor()' timeout");
+         phantom.exit(1);
+        } else {
+         // Condition fulfilled (timeout and/or condition is 'true')
+         //console.log("Test cases finished in " + (new Date().getTime() - start) + "ms.");
+         // Do what it's supposed to do once the condition is fulfilled
+         typeof(onReady) === "string" ? eval(onReady) : onReady(); 
+         clearInterval(interval); //< Stop this interval
+     }
+ }}, 100); //< repeat check every 100ms
+};
+if (system.args.length !== 2) {
+    console.log('Usage: run-Jasmine.js URL');
+    phantom.exit(1);
+}
+var page = require('webpage').create();
+// Route "console.log()" calls from within the Page context to the main Phantom context (i.e. current "this")
+page.onConsoleMessage = function(msg) {
+    console.log(msg);
+};
+page.open(system.args[1], function(status){
+    if (status !== "success") {
+        console.log("Unable to access network");
+        phantom.exit();
+    } else {
+        waitFor(function(){
+            return page.evaluate(function(){
+                return document.body.querySelector('.symbolSummary .pending') === null
+            });
+        }, function(){
+            var exitCode = page.evaluate(function(){
+                //Fail test cases
+                var list = document.body.querySelectorAll('.results > #details > .specDetail.failed');
+                if (list && list.length > 0) {
+                  console.log('');
+                  console.log(list.length + ' test(s) FAILED:');
+                  for (i = 0; i < list.length; ++i) {
+                      var el = list[i],
+                          desc = el.querySelector('.description'),
+                          msg = el.querySelector('.resultMessage.fail');
+                      console.log('');
+                      console.log(desc.innerText);
+                      console.log(msg.innerText);
+                      console.log('');
+                  }
+                  return 1;
+                } else {
+                  console.log(document.body.querySelector('.alert > .passingAlert.bar').innerText);
+                  return 0;
+                }
+            });
+            phantom.exit(exitCode);
+        });
+    }
+});
+\end{lstlisting}
+\section{Appendix A}
+\begin{lstlisting}[label=some-code,caption=Player.js,style = customjava]
+function Player() {
+}
+Player.prototype.play = function(song) {
+  this.currentlyPlayingSong = song;
+  this.isPlaying = true;
+};
+
+Player.prototype.pause = function() {
+  this.isPlaying = false;
+};
+
+Player.prototype.resume = function() {
+  if (this.isPlaying) {
+    throw new Error("song is already playing");
+  }
+
+  this.isPlaying = true;
+};
+
+Player.prototype.makeFavorite = function() {
+  this.currentlyPlayingSong.persistFavoriteStatus(true);
+};
+\end{lstlisting}
+\begin{lstlisting}[label=some-code,caption=Song.js, keywordstyle=\color{blue}, style = customjava]
+function Song() {
+}
+Song.prototype.persistFavoriteStatus = function(value) {
+  // something complicated
+  throw new Error("not yet implemented");
+};
+\end{lstlisting}
+\ldots{} and here it ends.
+\end{document}
